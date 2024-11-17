@@ -1,0 +1,97 @@
+{{- if .Values.jobs }}
+{{- $root := . }}
+{{- range $name, $job := .Values.jobs }}
+{{- if not $job.disabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $name }}
+spec:
+{{- if $job.ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ $job.ttlSecondsAfterFinished }}
+{{- end }}
+{{- if $job.backoffLimit }}
+  backoffLimit: {{ $job.backoffLimit }}
+{{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        job: {{ $name }}
+{{- if $job.annotations }}
+      annotations:
+        {{ toYaml $job.annotations | nindent 8 }}
+{{- end }}
+    spec:
+{{- if $job.sa }}
+      serviceAccountName: {{ $job.sa }}
+{{- end }}
+      containers:
+{{- range $name, $container := $job.containers }}
+      - name: "{{ $container.name }}"
+        image: "{{- tpl ($container.image.repository) $ }}:{{- tpl ($container.image.tag) $ }}"
+        imagePullPolicy: {{ $container.image.pullPolicy }}
+{{- if $container.command }}
+        command:
+{{ toYaml $container.command | indent 8 }}
+{{- end }}
+{{- if $container.args }}
+        args:
+{{ toYaml $container.args | indent 8 }}
+{{- end }}
+{{- if $container.containerPorts }}
+        ports:
+{{ toYaml $container.containerPorts | indent 8 }}
+{{- end }}
+{{- if and $container.volumeMounts (eq (tpl ($container.volumeMountDisabled | default "false") $) "false") }}
+        volumeMounts:
+{{ tpl (toYaml $container.volumeMounts) $ | indent 8 }}
+{{- end }}
+{{- if $container.securityContext }}
+        securityContext:
+{{ toYaml $container.securityContext | indent 10 }}
+{{- end }}
+{{- if $container.extraVars }}
+        env:
+{{ tpl (toYaml $container.extraVars) $ | indent 8 }}
+{{- end }}
+{{- if $container.envFrom }}
+        envFrom:
+{{ tpl (toYaml $container.envFrom) $ | indent 8 }}
+{{- end }}
+{{- if $container.secretKeyRef }}
+{{ toYaml $container.secretKeyRef | indent 8 }}
+{{- end }}
+{{- if $container.livenessProbe }}
+        livenessProbe:
+{{ toYaml $container.livenessProbe | indent 10 }}
+{{- end }}
+{{- if $container.startupProbe }}
+        startupProbe:
+{{ toYaml $container.startupProbe | indent 10 }}
+{{- end }}
+{{- if $container.readinessProbe }}
+        readinessProbe:
+{{ toYaml $container.readinessProbe | indent 10 }}
+{{- end }}
+{{- if $container.resources }}
+        resources:
+{{ tpl (toYaml $container.resources) $ | indent 10 }}
+{{- end }}
+{{- end }}
+{{- if $job.volumes }}
+      volumes:
+{{ toYaml $job.volumes | indent 8 }}
+{{- end }}
+{{- if $job.affinity }}
+      affinity:
+{{ toYaml $job.affinity | indent 10 }}
+{{- end }}
+      restartPolicy: {{ $job.restartPolicy }}
+{{- end }}
+{{- end }}
+{{- end }}

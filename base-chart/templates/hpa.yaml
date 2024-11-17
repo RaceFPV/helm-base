@@ -1,0 +1,45 @@
+{{- if .Values.hpas }}
+{{- $root := . }}
+{{- range $name, $hpa := .Values.hpas }}
+{{- if not $hpa.disabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    {{- if $hpa.kind }}
+    kind: {{ $hpa.kind }}
+    {{- else }}
+    kind: Deployment
+    {{- end }}
+    name: {{ $name }}
+  minReplicas: {{ $hpa.minReplicas }}
+  maxReplicas: {{ $hpa.maxReplicas }}
+  metrics:
+    {{- if $hpa.targetCPUUtilizationPercentage }}
+    - resource:
+        name: cpu
+        target:
+          AverageUtilization: {{ $hpa.targetCPUUtilizationPercentage }}
+          type: Utilization
+      type: Resource
+    {{- end }}
+    {{- if $hpa.targetMemoryUtilizationPercentage }}
+    - resource:
+        name: memory
+        target:
+          AverageUtilization: {{ $hpa.targetMemoryUtilizationPercentage }}
+          type: Utilization
+      type: Resource
+    {{- end }}
+  {{- if $hpa.behavior }}
+  {{ tpl (toYaml $hpa.behavior) $ | indent 2 }}
+  {{- end}}
+{{- end }}
+{{- end }}
+{{- end }}

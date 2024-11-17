@@ -1,0 +1,28 @@
+{{- if .Values.clusterrolebindings }}
+{{- $root := . }}
+{{- range $name, $rolebinding := .Values.clusterrolebindings }}
+{{- if not $rolebinding.disabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+roleRef:
+ kind: ClusterRole
+ name: {{ $rolebinding.roleName }}
+ apiGroup: {{ $rolebinding.apiGroup }}
+{{- if $rolebinding.subjects }}
+subjects:
+{{- range $key, $subject := $rolebinding.subjects }}
+  -
+    kind: {{ $subject.kind }}
+    name: {{ $subject.name }}
+{{- if $subject.apiGroup }}
+    apiGroup: {{ $subject.apiGroup }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

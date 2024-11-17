@@ -1,0 +1,39 @@
+{{- if .Values.pvs }}
+  {{- $root := . }}
+  {{- range $name, $pvc := .Values.pvs }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ (tpl ($name) $) | trunc 63 | trimSuffix "-" }}
+spec:
+  {{- if $pvc.storageClassName}}
+  storageClassName: {{ $pvc.storageClassName}}
+  {{- end }}
+  {{- if $pvc.storageClassName}}
+  capacity: 
+    {{ toYaml $pvc.capacity}}
+  {{- end }}
+  {{- if $pvc.accessModes}}
+  accessModes: 
+    {{ toYaml $pvc.accessModes}}
+  {{- end }}
+  {{- if $pvc.mountOptions}}
+  mountOptions: 
+    {{- range $pvc.mountOptions }}
+      - {{ . }}
+    {{- end }}
+  {{- end }}
+  {{- if $pvc.nfs}}
+  nfs: 
+    server: {{tpl $pvc.nfs.server $}}
+    path: {{tpl $pvc.nfs.path $}}
+    readOnly: {{$pvc.nfs.readOnly}}
+  {{- end }}
+  {{- if $pvc.claimRef}}
+  claimRef:
+     namespace: {{tpl $pvc.claimRef.namespace $}}
+     name: {{$pvc.claimRef.name}}
+  {{- end }}
+  {{- end }}
+{{- end }}

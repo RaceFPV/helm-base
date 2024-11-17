@@ -1,0 +1,19 @@
+{{- if index .Values "prometheus" }}
+{{- if index .Values.prometheus "monitor" }}
+{{- $root := . }}
+{{- range $name, $values := .Values.prometheus.monitor }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+{{- if $.Values.prometheus.labels }}
+{{ toYaml $.Values.prometheus.labels | indent 4 }}
+{{ end -}}
+spec:
+{{ toYaml $values.spec | indent 2 }}
+{{ end -}}
+{{ end -}}
+{{ end -}}

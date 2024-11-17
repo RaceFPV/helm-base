@@ -1,0 +1,19 @@
+{{- if .Values.configmaps }}
+{{- $root := . }}
+{{- range $name, $configmap := .Values.configmaps }}
+{{- if not $configmap.disabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+{{- if $configmap.namespace }}
+  namespace: {{$configmap.namespace}}
+{{ else }}
+  namespace: {{ $.Values.namespace }}
+{{- end }}
+data:
+{{ tpl (toYaml $configmap.data) $ | indent 2 }}
+{{- end }}
+{{- end }}
+{{- end }}

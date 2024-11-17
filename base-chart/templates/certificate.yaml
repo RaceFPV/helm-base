@@ -1,0 +1,20 @@
+{{- if .Values.certificates }}
+{{- $root := . }}
+{{- range $name, $certificate := .Values.certificates }}
+{{- if not $certificate.disabled }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  dnsNames: [{{ $certificate.dnsName }}]
+  secretName: {{ $certificate.secretName }}
+  issuerRef:
+    name: {{ $certificate.issuer }}
+    kind: ClusterIssuer
+    group: cert-manager.io
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,105 @@
+{{- if .Values.statefulsets }}
+{{- $root := . }}
+{{- range $name, $statefulset := .Values.statefulsets }}
+{{- if kindIs "map" $statefulset }}
+{{- if not (default false $statefulset.disabled) }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $name }}
+spec:
+{{- if $statefulset.replicaCount }}
+  replicas: {{ $statefulset.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+{{- if $statefulset.serviceName }}
+  serviceName: {{ $statefulset.serviceName }}
+{{- else }}
+  serviceName: {{ $name }}
+{{- end }}
+  template:
+    metadata:
+{{- if $statefulset.annotations }}
+      annotations:
+{{ toYaml $statefulset.annotations | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ $name }}
+    spec:
+{{- if $statefulset.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $statefulset.terminationGracePeriodSeconds }}
+{{- end }}
+{{- if $statefulset.nodeSelectors }}
+      nodeSelector:
+{{- range $key, $val := $statefulset.nodeSelectors }}
+        {{ $key }}: {{ $val | quote }}
+{{- end }}
+{{- end }}
+{{- if $statefulset.volumes }}
+      volumes:
+{{ toYaml $statefulset.volumes | indent 6 }}
+{{- end }}
+      containers:
+      - name: {{ $name }}
+        image: "{{ $statefulset.image.repository }}:{{ $statefulset.image.tag }}"
+        imagePullPolicy: {{ $statefulset.image.pullPolicy }}
+{{- if $statefulset.command }}
+        command:
+{{ toYaml $statefulset.command | indent 8 }}
+{{- end }}
+{{- if $statefulset.args }}
+        args:
+{{ toYaml $statefulset.args | indent 8 }}
+{{- end }}
+{{- if $statefulset.containerPorts }}
+        ports:
+{{ toYaml $statefulset.containerPorts | indent 8 }}
+{{- end }}
+{{- if $statefulset.volumeMounts }}
+        volumeMounts:
+{{ toYaml $statefulset.volumeMounts | indent 8 }}
+{{- end }}
+{{- if $statefulset.extraVars }}
+        env:
+{{ toYaml $statefulset.extraVars | indent 10 }}
+{{- end }}
+{{- if $statefulset.livenessProbe }}
+        livenessProbe:
+{{ toYaml $statefulset.livenessProbe | indent 10 }}
+{{- end }}
+{{- if $statefulset.readinessProbe }}
+        readinessProbe:
+{{ toYaml $statefulset.readinessProbe | indent 10 }}
+{{- end }}
+{{- if $statefulset.resources }}
+        resources:
+{{ toYaml $statefulset.resources | indent 10 }}
+{{- end }}
+{{- if $statefulset.preStopCommand }}
+        lifecycle:
+          preStop:
+            exec:
+              command: {{ $statefulset.preStopCommand }}
+{{- end }}
+{{- if $statefulset.affinity }}
+      affinity:
+{{ toYaml $statefulset.affinity | indent 8 }}
+{{- end }}
+{{- if $statefulset.tolerations }}
+      tolerations:
+{{ toYaml $statefulset.tolerations | indent 6 }}
+{{- end }}
+{{- if $statefulset.volumeClaimTemplates }}
+  volumeClaimTemplates:
+{{ toYaml $statefulset.volumeClaimTemplates | indent 2 }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

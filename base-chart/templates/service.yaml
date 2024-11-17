@@ -1,0 +1,43 @@
+{{- if .Values.services }}
+{{- $root := . }}
+{{- range $name, $svc := .Values.services }}
+{{- if not $svc.disabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+{{- if $svc.annotations }}
+  annotations:
+{{ tpl (toYaml $svc.annotations) $ | indent 4 }}
+{{- end }}
+  labels:
+    app: {{ $name }}
+spec:
+  type: {{ $svc.type }}
+{{- if $svc.externalName }}
+  externalName: {{ tpl ($svc.externalName) $  }}
+{{- end }}
+{{- if $svc.ports }}
+  ports:
+{{ toYaml $svc.ports | indent 2 }}
+{{- end }}
+{{- if $svc.healthCheckNodePort }}
+  healthCheckNodePort: {{ $svc.healthCheckNodePort }}
+{{- end }}
+  selector:
+{{- if $svc.app }}
+    app: "{{ $svc.app }}"
+{{- else if $svc.selector }}
+    io.kompose.service: {{$svc.selector}}
+{{- else if $svc.customSelector }}
+  {{- range $key, $val := $svc.customSelector }}
+    {{ $key | quote }}: {{ $val | quote }}
+  {{- end }}
+{{- else }}
+    app: {{ $name }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

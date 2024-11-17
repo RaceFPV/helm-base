@@ -1,0 +1,91 @@
+{{- if .Values.cronjobs }}
+{{- $root := . }}
+{{- range $name, $cronjob := .Values.cronjobs }}
+{{- if not $cronjob.disabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $name }}
+spec:
+  suspend: {{ $cronjob.suspend }}
+  concurrencyPolicy: {{ $cronjob.concurrencyPolicy }}
+  schedule: {{ $cronjob.schedule | quote }}
+{{- if $cronjob.successfulJobsHistoryLimit }}
+  successfulJobsHistoryLimit: {{ $cronjob.successfulJobsHistoryLimit }}
+{{- end }}
+{{- if $cronjob.failedJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ $cronjob.failedJobsHistoryLimit }}
+{{- end }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ $cronjob.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            app: {{ $name }}
+            cron: {{ $name }}
+{{- if $cronjob.annotations }}
+          annotations:
+            {{ toYaml $cronjob.annotations | nindent 12 }}
+{{- end }}
+        spec:
+{{- if $cronjob.sa }}
+          serviceAccountName: {{ $cronjob.sa }}
+{{- end }}
+          containers:
+          - name: {{ $name }}
+            image: "{{- tpl ($cronjob.image.repository) $ }}:{{- tpl ($cronjob.image.tag) $ }}"
+            imagePullPolicy: {{ $cronjob.image.pullPolicy }}
+{{- if $cronjob.command }}
+            command:
+{{ toYaml $cronjob.command | indent 12 }}
+{{- end }}
+{{- if $cronjob.args }}
+            args:
+{{ toYaml $cronjob.args | indent 12 }}
+{{- end }}
+{{- if $cronjob.containerPorts }}
+            ports:
+{{ toYaml $cronjob.containerPorts | indent 12 }}
+{{- end }}
+{{- if $cronjob.volumeMounts }}
+            volumeMounts:
+{{ toYaml $cronjob.volumeMounts | indent 12 }}
+{{- end }}
+{{- if $cronjob.securityContext }}
+            securityContext:
+{{ toYaml $cronjob.securityContext | indent 14 }}
+{{- end }}
+{{- if or $cronjob.extraVars $cronjob.secretKeyRef }}
+{{- if $cronjob.extraVars }}
+            env:
+{{ tpl (toYaml $cronjob.extraVars) $ | indent 12 }}
+{{- end }}
+{{- if $cronjob.envFrom }}
+            envFrom:
+{{ tpl (toYaml $cronjob.envFrom) $ | indent 12 }}
+{{- end }}
+{{- if $cronjob.secretKeyRef }}
+{{ toYaml $cronjob.secretKeyRef | indent 12 }}
+{{- end }}
+{{- end }}
+{{- if $cronjob.resources }}
+            resources:
+{{ toYaml $cronjob.resources | indent 14 }}
+{{- end }}
+{{- if $cronjob.volumes }}
+          volumes:
+{{ toYaml $cronjob.volumes | indent 10 }}
+{{- end }}
+{{- if $cronjob.affinity }}
+          affinity:
+{{ toYaml $cronjob.affinity | indent 12 }}
+{{- end }}
+          restartPolicy: {{ $cronjob.restartPolicy }}
+{{- end }}
+{{- end }}
+{{- end }}

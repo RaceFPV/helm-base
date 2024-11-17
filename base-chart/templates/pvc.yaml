@@ -1,0 +1,29 @@
+{{- if .Values.pvcs }}
+  {{- $root := . }}
+  {{- range $name, $pvc := .Values.pvcs }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Values.namespace }}
+spec:
+  accessModes:
+    {{ $pvc.accessModes | toYaml | nindent 4 }}
+  {{- if $pvc.policy }}
+  persistentVolumeReclaimPolicy: {{ $pvc.policy }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $pvc.size }}
+    {{- if $pvc.storageClassName}}
+  storageClassName: {{ $pvc.storageClassName}}
+    {{- end }}
+    {{- if $pvc.volumeMode}}
+  volumeMode: {{ $pvc.volumeMode}}
+    {{- end }}
+    {{- if $pvc.volumeName}}
+  volumeName: {{ $pvc.volumeName}}
+    {{- end }}
+  {{- end }}
+{{- end }}

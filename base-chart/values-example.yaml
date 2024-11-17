@@ -1,0 +1,316 @@
+namespace: my-namespace
+
+deployments:
+  [deployment name]:
+    replicaCount: 1
+    strategy:
+      type: Recreate
+    volumes:
+      - name: volume1
+        configMap:
+          name: volume1
+    containers:
+      - name: container1
+        image:
+          repository: example.com/docker/test
+          tag: latest
+          pullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        containerPorts:
+          - containerPort: 8080
+        extraVars:
+          - name: EXAMPLE_VAR
+            value: "value"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+          - mountPath: /opt/container1/conf/example.xml
+            name: container1-xml
+            subPath: example.xml
+        livenessProbe:
+          exec:
+            command:
+              - curl
+              - -f
+              - http://localhost:8080/api/test
+          initialDelaySeconds: 30
+          timeoutSeconds: 120
+          successThreshold: 
+          failureThreshold: 12
+          periodSeconds: 120
+
+
+
+statefulsets:
+  [statefulset name]:
+    nodeSelectors:
+      EXAMPLE_KEY: "value"
+    serviceName: name-clusterip-service #optional, but only if service is created with identical statefulset name
+    image:
+      repository: example.com/helmrepo/test
+      tag: latest
+      pullPolicy: Always
+    replicaCount: 1
+    containerPorts:
+      - name: "port8080"
+        containerPort: 8080
+    extraVars:
+      - name: EXAMPLE_VAR
+        value: "value"
+      - name: EXAMPLE_VAR_2
+        valueFrom:
+          secretKeyRef:
+            name: example-api-key
+            key: key
+    volumeMounts:
+      - mountPath: /opt/container1/conf/example.xml
+        name: container1-xml
+        subPath: example.xml
+    volumes:
+      - name: container1-xml
+        persistentVolumeClaim:
+          claimName: container1-xml
+    terminationGracePeriodSeconds: 60
+    preStopCommand: ['"/bin/sh", "-c", "sleep 30"']
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+        scheme: idk
+      initialDelaySeconds: 30
+      timeoutSeconds: 60
+      successThreshold: 120
+      failureThreshold: 120
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+        scheme: idk
+      initialDelaySeconds: 30
+      timeoutSeconds: 60
+    volumeClaimTemplates:
+      - metadata:
+          name: container1-xml
+          labels:
+            name: container1-xml
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
+          storageClassName: ceph
+
+daemonsets:
+  [daemonset name]:
+    tolerations:
+      - key: value
+        effect: NoSchedule
+    image:
+      repository: example.com/helmrepo/test
+      tag: latest
+      pullPolicy: Always
+    extraVars:
+      - name: EXAMPLE_VAR
+        value: "value"
+    volumeMounts:
+      - mountPath: /some/folder
+        name: container1-xml
+        readOnly: true
+    terminationGracePeriodSeconds:
+    volumes:
+      - name: container1-xml
+        persistentVolumeClaim:
+          claimName: container1-xml
+    securityContext:
+      privileged: true
+
+cronjobs:
+  [cronjob name]:
+    enabled: False
+    concurrencyPolicy:
+    failedJobsHistoryLimit: 50
+    successfulJobsHistoryLimit: 50
+    restartPolicy: Always
+    schedule: '* * * * *'
+    image:
+      repository: example.com/helmrepo/test
+      tag: latest
+      pullPolicy: Always
+    replicaCount: 1
+    containerPorts:
+      - name: "port-8080"
+        containerPort: 8080
+    extraVars:
+      - name: EXAMPLE_VAR
+        value: "value"
+    volumeMounts:
+      - mountPath: /some/path
+        name: container1-xml
+        readOnly: true
+    volumes:
+      - name: container1-xml
+        persistentVolumeClaim:
+          claimName: container1-xml
+    securityContext:
+      privileged: true
+
+services:
+  [service name]:
+    whitelist: False
+    annotations:
+      test: "yes"
+    app: container1
+    customSelector:
+      app.kubernetes.io/instance: myinstance
+    sessionAffinityType: None
+    type: ClusterIP
+    ports:
+      - name: "80"
+        port: 80
+        targetPort: 8080
+        protocol: TCP
+
+ingresses:
+  [ingress name]:
+    annotations:
+      test: "yes"
+    labels:
+      use-http-solver: "true"
+    className: ingress-nginx-internal
+    tls:
+      - hosts:
+        - example.mysite.com
+        secretName: example-secret-tls
+    rules:
+      - host: example.mysite.com
+        http:
+          paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: example
+                  port:
+                    number: 80
+
+certificates:
+  [cert name]:
+    dnsName: example.mysite.com
+    secretName: mycert-tls
+    issuer: letsencrypt-prod
+
+hpas:
+  [hpa name]:
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 70
+    kind: StatefulSet
+
+pdbs:
+  [pdb name]:
+    minAvailable: 1
+    maxUnavailable: 1
+
+pvcs:
+  [pvc name]:
+    accessModes: ReadWriteOnce
+    size: 10Gi
+    storageClassName: my-storage-class
+    policy: Retain
+    volumeMode: Filesystem
+    volumeName: pvc-1111221-121231232-123123213
+
+configmaps:
+  [configmap name]:
+    data:
+      example.xml: |
+        some large dataset
+
+secrets:
+  [secret name]:
+    data:
+      dataFoo: bar
+
+# sealed secrets should be encrypted BEFORE being placed in the values.yaml file
+# failure to do so would lead to password leaks
+# example: 
+# echo -n testpassword | kubeseal --raw --namespace test --scope namespace-wide
+sealedsecrets:
+  [sealedsecret name]:
+    encryptedData:
+      password: AgBUlBBgGTb1OSl59gOcIL96mTIiCAGaSPyq2iyepuieZRfH...
+
+sa:
+  [service account name]:
+    annotations: {} # at least one field is required.
+
+roles:
+  [role name]:
+    disabled: false
+    rules:
+      listPods:
+        apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["list"]
+      getSecrets:
+        apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get"]
+
+rolebindings:
+  [rolebinding name]:
+    disabled: false
+    apiGroup: rbac.authorization.k8s.io
+    roleName: rolename
+    subjects:
+      sub1:
+        name: serviceaccountname
+        namespace: sanamespace
+        kind: ServiceAccount
+
+backups:
+  [backup name]:
+    schedule: 0 */12 * * *
+    namespace:  #optional
+    - example
+    - example2
+    ttl: 336h0m0s #optional
+
+prometheus:
+  labels: #additional labels for prometheus resources
+    prometheus: app 
+  rules: {} #list of service/application rules and alerts
+  # <servicename>-alerts:
+  #   labels:       # Optional specific label values for the rules - to override the resource labels(which are shared)
+  #     <label>: <value>
+  #   groups:       # The prometheus alert groups
+  #   - name: "<servicename>-alerts"
+  #     rules:
+  #     - alert: EventCollectorRawEventsDropped
+  #       expr: sum by(cluster) (increase(event_collector_raw_events_dropped[5m])) > 1000
+  #       for: 5m
+  #       labels:
+  #         owner: <owner>
+  #         severity: <info/warning/critical>
+  #       annotations:
+  #         summary: "Event Collector high raw events dropping on cluster {{ $labels.cluster }}"
+  #         description: "Event collector high raw events dropped for the last 5 minutes\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+  monitor: {} #list of services that prometheus should scrape metrics from
+  # <servicename>:
+  #   spec: 
+  #     selector:
+  #       matchLabels:
+  #         app: <servicename>  # Specify unique labelset for the service to be selected for scraping
+  #     endpoints:
+  #     - port: <portname>   #the service port name where metrics can be scraped from
+  #       path: /<metrics path>  # optional, only if different from "/metrics"
+  #       scheme: https  # optional, only if different from http
+  #       interval: 30s  # optional, only if need higher resolution than the default of 60 seconds
+  #       scrapeTimeout: 40s  # optional, only if scrape fails on timeout and needs higher timeout than 30 seconds

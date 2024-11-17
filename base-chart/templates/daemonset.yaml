@@ -1,0 +1,70 @@
+{{- if .Values.daemonsets }}
+{{- $root := . }}
+{{- range $name, $daemonset := .Values.daemonsets }}
+{{- if kindIs "map" $daemonset }}
+{{- if not (default false $daemonset.disabled) }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $name }}
+spec:
+{{- if $daemonset.tolerations }}
+  tolerations:
+{{ toYaml $daemonset.tolerations | indent 6 }}
+{{- end }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+      - name: {{ $name }}
+        image: "{{ $daemonset.image.repository }}:{{ $daemonset.image.tag }}"
+        imagePullPolicy: {{ $daemonset.image.pullPolicy }}
+{{- if $daemonset.command }}
+        command:
+{{ toYaml $daemonset.command | indent 8 }}
+{{- end }}
+{{- if $daemonset.args }}
+        args:
+{{ toYaml $daemonset.args | indent 8 }}
+{{- end }}
+{{- if $daemonset.volumeMounts }}
+        volumeMounts:
+{{ toYaml $daemonset.volumeMounts | indent 8 }}
+{{- end }}
+{{- if $daemonset.securityContext }}
+        securityContext:
+{{ toYaml $daemonset.securityContext | indent 10 }}
+{{- end }}
+{{- if $daemonset.extraVars }}
+        env:
+{{- range $key, $val := $daemonset.extraVars }}
+        - name: {{ $key | quote }}
+          value: {{ $val | quote }}
+{{- end }}
+{{- end }}
+      terminationGracePeriodSeconds: {{ $daemonset.terminationGracePeriodSeconds }}
+{{- if $daemonset.volumes }}
+      volumes:
+{{ toYaml $daemonset.volumes | indent 6 }}
+{{- end }}
+{{- if $daemonset.affinity }}
+      affinity:
+{{ toYaml $daemonset.affinity | indent 8 }}
+{{- end }}
+{{- if $daemonset.tolerations }}
+      tolerations:
+{{ toYaml $daemonset.tolerations | indent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

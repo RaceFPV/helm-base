@@ -1,0 +1,17 @@
+{{- if .Values.sa }}
+{{- $root := . }}
+{{- range $name, $sa := .Values.sa }}
+{{- if not $sa.disabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+{{- with .annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

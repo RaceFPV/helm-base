@@ -1,0 +1,22 @@
+{{- if index .Values "prometheus" }}
+{{- if index .Values.prometheus "rules" }}
+{{- $root := . }}
+{{- range $name, $alerts := .Values.prometheus.rules }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+{{- if $alerts.labels }}
+{{ toYaml $alerts.labels | indent 4 }}
+{{- else if $.Values.prometheus.labels }}
+{{ toYaml $.Values.prometheus.labels | indent 4 }}
+{{- end }}
+spec:
+  groups:
+{{- toYaml $alerts.groups | nindent 2 }}
+{{ end -}}
+{{ end -}}
+{{ end -}}

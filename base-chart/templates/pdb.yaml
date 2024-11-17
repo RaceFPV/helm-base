@@ -1,0 +1,28 @@
+{{- if .Values.pdbs }}
+{{- $root := . }}
+{{- range $name, $pdb := .Values.pdbs }}
+{{- if not $pdb.disabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Values.namespace }}
+    {{- if $pdb.annotations }}
+  annotations:
+      {{ toYaml $pdb.annotations | indent 4}}
+    {{- end }}
+  labels:
+    app: {{ $name }}
+spec:
+    {{- if $pdb.minAvailable }}
+  minAvailable: {{ $pdb.minAvailable }}
+    {{- else if $pdb.maxUnavailable }}
+  maxUnavailable: {{ $pdb.maxUnavailable }}
+    {{- end }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  {{- end }}
+{{- end }}
+{{- end }}

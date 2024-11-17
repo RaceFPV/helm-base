@@ -1,0 +1,26 @@
+{{- if .Values.backups }}
+  {{- $root := . }}
+  {{- range $name, $backup := .Values.backups }}
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: {{ $name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Values.namespace }}
+spec:
+  schedule:
+    {{ $backup.schedule | toYaml | nindent 4 }}
+  template:
+    {{- if $backup.namespace }}
+    includedNamespaces:
+    {{- range $backupnamespace, $backupnamespace := $backup.namespace }}
+    - {{$backupnamespace}}
+    {{- end }}
+    {{- end }}
+    {{- if $backup.ttl }}
+    ttl: {{ $backup.ttl}}
+    {{- else }}
+    ttl: 336h0m0s
+    {{- end }}
+  {{- end }}
+{{- end }}
